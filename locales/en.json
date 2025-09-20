@@ -1,0 +1,220 @@
+{
+    "share_title": "🎉 Share your achievement!",
+    "twitter": "Twitter",
+    "facebook": "Facebook",
+    "share": "Share",
+    "copy": "Copy",
+    "share_conquered": "🏆 I CONQUERED all levels",
+    "share_reached_level": "🎯 I reached level {{level}}",
+    "share_message": "{{gameStatus}} with a score of {{score}} points in Just Push The Button! 🚀\n\nCan you do better? 😏",
+    "copied_title": "Copied!",
+    "copied_text": "Text copied to clipboard",
+    "copied_title_clipboard": "Copied! 📋",
+    "copied_text_clipboard": "Your score was copied to the clipboard!",
+    "copied_text_long": "Text copied to clipboard. You can now paste it anywhere!",
+    "error_title": "Error",
+    "error_twitter": "Unable to open Twitter",
+    "error_facebook": "Unable to open Facebook",
+    "error_share": "Unable to share",
+    "error_copy": "Unable to copy",
+    "share_dialog_title": "Share my score",
+    "score_label": "Score:",
+    "clicks_label": "Clicks:",
+    "level_label": "Level:",
+    "progress_text": "{{progress}}% / {{required}}%",
+    "select_language": "Select Language",
+    "close": "Close",
+    "start_title": "Just Push The Button",
+    "start_subtitle": "🎮 The ultimate reflex challenge 🎮",
+    "badge_reflex": "⚡ Reflexes",
+    "badge_arcade": "🎯 Arcade",
+    "badge_fast": "🚀 Fast",
+    "start_button": "Start Game",
+    "danger_button": "DANGER!",
+    "push_button": "PUSH",
+    "rule_green_title": "Push and triumph!",
+    "rule_green_desc": "Your destiny starts here.",
+    "rule_red_title": "Red = Danger!",
+    "rule_red_desc": "One wrong move... and it's over.",
+    "rule_time_title": "Limited time!",
+    "rule_time_desc": "Just Push The Button doesn't forgive hesitation.",
+    "rule_levels_title": "Climb all 10 levels!",
+    "rule_levels_desc": "Will you become a legend... or a footnote?",
+    "start_cta": "Ready to push your limits? • Adventure awaits!",
+    "gameover": {
+        "tiers": {
+            "tier_0": {
+                "label": "0-49",
+                "phrases": [
+                    "Not bad for a snail 🐌",
+                    "Are you clicking with your elbow?",
+                    "The button fell asleep waiting for you 😴"
+                ]
+            },
+            "tier_1": {
+                "label": "50-99",
+                "phrases": [
+                    "We've seen plants move faster 🌿",
+                    "Even the red one ignores you",
+                    "You're heating the air, not the score"
+                ]
+            },
+            "tier_2": {
+                "label": "100-149",
+                "phrases": [
+                    "The button still leads the dance 💃",
+                    "You click... sometimes",
+                    "It's shaking, but that's not it"
+                ]
+            },
+            "tier_3": {
+                "label": "150-199",
+                "phrases": [
+                    "Reflexes in nap mode 😴",
+                    "Slowness, a passion",
+                    "Your finger uses a turn signal"
+                ]
+            },
+            "tier_4": {
+                "label": "200-249",
+                "phrases": [
+                    "You're warming up... very slowly 🔥",
+                    "We start to see some effort",
+                    "Still in warm-up mode"
+                ]
+            },
+            "tier_5": {
+                "label": "250-299",
+                "phrases": [
+                    "Not ridiculous, but not glorious either 🤏",
+                    "The button gives you a mocking smile",
+                    "Still shy, champ"
+                ]
+            },
+            "tier_6": {
+                "label": "300-349",
+                "phrases": [
+                    "You're really starting to click 👆",
+                    "Ok, it's twitching",
+                    "The green one tolerates you"
+                ]
+            },
+            "tier_7": {
+                "label": "350-399",
+                "phrases": [
+                    "Ok rookie, we're watching you 👀",
+                    "Not too shameful",
+                    "Aiming for average?"
+                ]
+            },
+            "tier_8": {
+                "label": "400-449",
+                "phrases": [
+                    "The machine awakens ⚙️",
+                    "Ah, you're really playing!",
+                    "The red one starts to sweat"
+                ]
+            },
+            "tier_9": {
+                "label": "450-499",
+                "phrases": [
+                    "You pique the button's curiosity 🤨",
+                    "It's worth a try, keep going",
+                    "Almost looks like skill"
+                ]
+            },
+            "tier_10": {
+                "label": "500-549",
+                "phrases": [
+                    "Half-human, half-reflex ⚡",
+                    "You vibrate a little",
+                    "The button frowns"
+                ]
+            },
+            "tier_11": {
+                "label": "550-599",
+                "phrases": [
+                    "It's getting serious 🧪",
+                    "Switching to speed 2",
+                    "The red one is getting impatient"
+                ]
+            },
+            "tier_12": {
+                "label": "600-649",
+                "phrases": [
+                    "The button respects you (a little) 🤝",
+                    "Borderline respect",
+                    "You're becoming vaguely threatening"
+                ]
+            },
+            "tier_13": {
+                "label": "650-699",
+                "phrases": [
+                    "You're making the red one sweat 💦",
+                    "It's finally heating up",
+                    "Avoiding shame"
+                ]
+            },
+            "tier_14": {
+                "label": "700-749",
+                "phrases": [
+                    "View: pro gamer incoming 🎮",
+                    "Maybe we were wrong to underestimate you",
+                    "The button avoids eye contact"
+                ]
+            },
+            "tier_15": {
+                "label": "750-799",
+                "phrases": [
+                    "The zone. You're in it. 🧘",
+                    "Ok, that's beautiful",
+                    "The red one stammers"
+                ]
+            },
+            "tier_16": {
+                "label": "800-849",
+                "phrases": [
+                    "Bionic hand detected 🤖",
+                    "You're becoming a rumor",
+                    "The green one salutes you"
+                ]
+            },
+            "tier_17": {
+                "label": "850-899",
+                "phrases": [
+                    "The button begs for its life 🙏",
+                    "Stop, you'll break it",
+                    "Calling a referee"
+                ]
+            },
+            "tier_18": {
+                "label": "900-949",
+                "phrases": [
+                    "Cosmic interstellar slap 🌌",
+                    "We're taking notes",
+                    "The red one ragequits"
+                ]
+            },
+            "tier_19": {
+                "label": "950-1000+",
+                "phrases": [
+                    "Button deity. We bow 👑",
+                    "You? Cheating... or a myth",
+                    "The button asks for a break"
+                ]
+            }
+        },
+        "victory": {
+            "win": "👑 Ok... you won. Probably by accident.",
+            "level8": "🔥 Impressive... for a human. Calm down though.",
+            "level5": "⚡ You're doing... sometimes. The button is still yawning.",
+            "level3": "🎯 Not too shameful. But we've seen better. Much better.",
+            "default": "💤 The button didn't even wake up for you."
+        },
+        "subtitle_win": "You conquered all the challenges!\nYou're a true champion!",
+        "subtitle": "Level reached: {{level}}\n{{phrase}}",
+        "final_score": "🏆 Final Score 🏆",
+        "replay": "REPLAY",
+        "menu": "MENU"
+    }
+}

@@ -1,0 +1,241 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { GameState, LevelConfig } from '../types/GameTypes';
+import { LEVEL_CONFIGS } from '../data/LevelData';
+
+const INITIAL_STATE: GameState = {
+  currentLevel: 1,
+  progress: 0,
+  timeLeft: 0,
+  isButtonRed: false,
+  score: 0,
+  isGameOver: false,
+  isGameWon: false,
+  successfulClicks: 0,
+  gameStartTime: Date.now(),
+};
+
+export const useGameLogic = () => {
+  const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
+  const [isPlaying, setIsPlaying] = useState(false);
+  // RAF and timing refs
+  const rafIdRef = useRef<number | null>(null);
+  const lastTickMsRef = useRef<number>(0);
+  // Red button control without timeouts
+  const lastRedButtonTimeRef = useRef<number>(0); // seconds since epoch
+  const redUntilTimeRef = useRef<number>(0); // absolute seconds when red should end
+  const lastRedEvalMsRef = useRef<number>(0); // throttle red evaluation (ms)
+
+  const getCurrentLevelConfig = useCallback((): LevelConfig => {
+    return LEVEL_CONFIGS[gameState.currentLevel - 1] || LEVEL_CONFIGS[LEVEL_CONFIGS.length - 1];
+  }, [gameState.currentLevel]);
+
+  const startGame = useCallback(() => {
+    const config = getCurrentLevelConfig();
+    setGameState(prev => ({
+      ...INITIAL_STATE,
+      currentLevel: 1,
+      timeLeft: config.timeLimit,
+      gameStartTime: Date.now(),
+    }));
+    setIsPlaying(true);
+  }, [getCurrentLevelConfig]);
+
+  const resetGame = useCallback(() => {
+    setIsPlaying(false);
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    lastTickMsRef.current = 0;
+    lastRedButtonTimeRef.current = 0;
+    redUntilTimeRef.current = 0;
+    lastRedEvalMsRef.current = 0;
+    setGameState(INITIAL_STATE);
+  }, []);
+
+  const handleButtonPress = useCallback(() => {
+    if (!isPlaying || gameState.isGameOver || gameState.isGameWon) return;
+
+    setGameState(prev => {
+      if (prev.isButtonRed) {
+        // Pénalité progressive selon le niveau
+        const level = prev.currentLevel;
+        let penalty = 10; // base pour niv 1-2
+        if (level >= 3 && level <= 4) penalty = 12;
+        else if (level === 5) penalty = 14;
+        else if (level === 6) penalty = 16;
+        else if (level === 7) penalty = 18;
+        else if (level === 8) penalty = 20;
+        else if (level === 9) penalty = 22;
+        else if (level >= 10) penalty = 25;
+
+        const reduced = Math.max(0, prev.progress - penalty);
+        return { ...prev, progress: reduced };
+      } else {
+        // Bouton vert : progression +2%
+        const newProgress = Math.min(prev.progress + 2, getCurrentLevelConfig().requiredProgress);
+        const isLevelComplete = newProgress >= getCurrentLevelConfig().requiredProgress;
+        
+        if (isLevelComplete) {
+          // Niveau terminé
+          const levelBonus = prev.currentLevel * 10;
+          const newScore = prev.score + 100 + prev.successfulClicks + levelBonus;
+          
+          if (prev.currentLevel >= LEVEL_CONFIGS.length) {
+            // Jeu terminé
+            return {
+              ...prev,
+              progress: newProgress,
+              score: newScore,
+              isGameWon: true,
+            };
+          } else {
+            // Niveau suivant
+            const nextLevel = prev.currentLevel + 1;
+            const nextConfig = LEVEL_CONFIGS[nextLevel - 1];
+            return {
+              ...prev,
+              currentLevel: nextLevel,
+              progress: 0,
+              timeLeft: nextConfig.timeLimit,
+              score: newScore,
+              successfulClicks: 0,
+            };
+          }
+        } else {
+          // Progression normale
+          return {
+            ...prev,
+            progress: newProgress,
+            successfulClicks: prev.successfulClicks + 1,
+          };
+        }
+      }
+    });
+  }, [isPlaying, gameState.isGameOver, gameState.isGameWon, getCurrentLevelConfig]);
+
+  // RAF-based main loop with delta time and integrated red-button logic
+  useEffect(() => {
+    if (!isPlaying || gameState.isGameOver || gameState.isGameWon) return;
+
+    const getNowMs = () => (globalThis.performance && typeof globalThis.performance.now === 'function') ? globalThis.performance.now() : Date.now();
+
+    // initialize timing refs at start of loop
+    if (lastTickMsRef.current === 0) {
+      lastTickMsRef.current = getNowMs();
+    }
+
+    const tick = () => {
+      const nowMs = getNowMs();
+      const deltaSec = Math.min(0.2, Math.max(0, (nowMs - lastTickMsRef.current) / 1000)); // clamp to avoid large jumps
+      lastTickMsRef.current = nowMs;
+
+      setGameState(prev => {
+        const config = LEVEL_CONFIGS[prev.currentLevel - 1] || LEVEL_CONFIGS[LEVEL_CONFIGS.length - 1];
+
+        // advance timer by real delta
+        const updatedTimeLeft = Math.max(0, prev.timeLeft - deltaSec);
+
+        // compute elapsed time in level for predictable windows
+        const levelElapsed = (config.timeLimit - updatedTimeLeft);
+
+        let nextIsRed = prev.isButtonRed;
+        const nowSec = Date.now() / 1000;
+
+        // throttle red evaluation to ~10Hz
+        const shouldEvalRed = (nowMs - lastRedEvalMsRef.current) >= 100;
+        if (shouldEvalRed) {
+          lastRedEvalMsRef.current = nowMs;
+
+          // end red if duration elapsed
+          if (nextIsRed && nowSec >= redUntilTimeRef.current) {
+            nextIsRed = false;
+          }
+
+          if (config.redButtonPattern === 'predictable') {
+            if (config.fixedRedWindows !== undefined) {
+              const inFixedRed = (config.fixedRedWindows || []).some(w => levelElapsed >= w.start && levelElapsed < w.start + Math.min(w.duration, 1));
+              nextIsRed = inFixedRed;
+              if (inFixedRed) {
+                // keep red tightly bounded by windows
+                redUntilTimeRef.current = nowSec + 0.05; // small guard to allow quick off
+              }
+            } else {
+              const cycleTime = 4;
+              const redDuration = 1;
+              const timeSinceLastRed = Math.max(0, nowSec - lastRedButtonTimeRef.current);
+              const cyclePosition = (timeSinceLastRed % cycleTime);
+              nextIsRed = cyclePosition < redDuration;
+              if (nextIsRed) {
+                redUntilTimeRef.current = nowSec + redDuration;
+              }
+            }
+          } else {
+            const timeSinceLastRed = Math.max(0, nowSec - lastRedButtonTimeRef.current);
+
+            const trySpawnRed = (biasTowardsEnd: boolean) => {
+              if (timeSinceLastRed < (config.redButtonMinSafe || 1)) return;
+              if (nextIsRed) return;
+              const baseChance = (config.redButtonChance || 0.15);
+              let chance = baseChance;
+              if (biasTowardsEnd) {
+                const progressRatio = Math.min(prev.progress / (config.requiredProgress || 100), 1);
+                chance += progressRatio * 0.35;
+              }
+              if (Math.random() < chance) {
+                nextIsRed = true;
+                lastRedButtonTimeRef.current = nowSec;
+                const redDuration = 1;
+                redUntilTimeRef.current = nowSec + redDuration;
+              }
+            };
+
+            if (typeof config.randomRedsCount === 'number') {
+              trySpawnRed(false);
+            } else if (typeof config.progressiveRedsCount === 'number') {
+              trySpawnRed(true);
+            } else {
+              // simple fallback chance
+              trySpawnRed(false);
+            }
+          }
+        }
+
+        const nextState: GameState = {
+          ...prev,
+          timeLeft: updatedTimeLeft,
+          isButtonRed: nextIsRed,
+        };
+
+        if (updatedTimeLeft <= 0 && !prev.isGameOver) {
+          nextState.isGameOver = true;
+        }
+
+        return nextState;
+      });
+
+      // continue loop if still playing
+      if (isPlaying && !gameState.isGameOver && !gameState.isGameWon) {
+        rafIdRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    rafIdRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
+  }, [isPlaying, gameState.isGameOver, gameState.isGameWon]);
+
+  return {
+    gameState,
+    isPlaying,
+    startGame,
+    resetGame,
+    handleButtonPress,
+    getCurrentLevelConfig,
+  };
+};

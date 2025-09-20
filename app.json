@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "just_push_the_button",
-    "slug": "just_push_the_button",
+    "name": "Just Push The Button",
+    "slug": "just-push-the-button",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,21 +10,31 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#4CAF50"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.justpushthebutton.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4CAF50"
       },
+      "package": "com.justpushthebutton.app",
+      "versionCode": 1,
+      "permissions": [],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6c7e6b95-f579-4b63-95c2-2413e3598c2b"
+      }
+    },
+    "owner": "coleim"
   }
 }
