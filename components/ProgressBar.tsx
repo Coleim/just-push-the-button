@@ -24,9 +24,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ progress, requiredProg
             ]} 
           />
         </View>
-        <Text style={styles.progressText}>
-          {t('progress_text', { progress: Math.round(progress), required: requiredProgress })}
-        </Text>
       </View>
     </View>
   );

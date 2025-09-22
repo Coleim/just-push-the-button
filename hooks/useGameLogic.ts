@@ -2,6 +2,22 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, LevelConfig } from '../types/GameTypes';
 import { LEVEL_CONFIGS } from '../data/LevelData';
 
+// Set to a number (1..LEVEL_CONFIGS.length) to start directly at that level during dev/testing.
+// Leave undefined to start at level 1 normally.
+const DEBUG_START_LEVEL: number | undefined = undefined; // e.g., 5
+
+// Compute the progress penalty applied when pressing during a red state for a given level
+const getRedPenaltyForLevel = (level: number): number => {
+  if (level >= 10) return 25;
+  if (level === 9) return 22;
+  if (level === 8) return 20;
+  if (level === 7) return 18;
+  if (level === 6) return 16;
+  if (level === 5) return 14;
+  if (level >= 3 && level <= 4) return 12;
+  return 10; // levels 1-2
+};
+
 const INITIAL_STATE: GameState = {
   currentLevel: 1,
   progress: 0,
@@ -24,19 +40,78 @@ export const useGameLogic = () => {
   const lastRedButtonTimeRef = useRef<number>(0); // seconds since epoch
   const redUntilTimeRef = useRef<number>(0); // absolute seconds when red should end
   const lastRedEvalMsRef = useRef<number>(0); // throttle red evaluation (ms)
+  const redSpawnsThisLevelRef = useRef<number>(0); // number of red spawns in current level
+  const scheduledRedTimesRef = useRef<number[]>([]); // seconds since level start when reds should appear
+  const scheduledRedTriggeredRef = useRef<boolean[]>([]); // whether scheduled index has been triggered
 
   const getCurrentLevelConfig = useCallback((): LevelConfig => {
     return LEVEL_CONFIGS[gameState.currentLevel - 1] || LEVEL_CONFIGS[LEVEL_CONFIGS.length - 1];
   }, [gameState.currentLevel]);
 
   const startGame = useCallback(() => {
-    const config = getCurrentLevelConfig();
+    const desiredLevel = typeof DEBUG_START_LEVEL === 'number'
+      ? Math.min(Math.max(1, Math.floor(DEBUG_START_LEVEL)), LEVEL_CONFIGS.length)
+      : 1;
+    const config = LEVEL_CONFIGS[desiredLevel - 1];
     setGameState(prev => ({
       ...INITIAL_STATE,
-      currentLevel: 1,
+      currentLevel: desiredLevel,
       timeLeft: config.timeLimit,
       gameStartTime: Date.now(),
     }));
+    redSpawnsThisLevelRef.current = 0;
+    // schedule reds for level
+    const scheduleForLevel = (cfg: LevelConfig) => {
+      scheduledRedTimesRef.current = [];
+      scheduledRedTriggeredRef.current = [];
+      const timeLimit = Math.max(0, cfg.timeLimit || 0);
+      const maxStart = Math.max(0, timeLimit - 1); // ensure 1s fits
+      const minGap = (cfg.level >= 5) ? 0.5 : 1.05;
+      const generateSpacedTimes = (count: number, biasTowardsEnd: boolean): number[] => {
+        if (count <= 0 || maxStart <= 0) return [];
+        // Upper bound due to spacing
+        const maxCountBySpace = Math.floor(maxStart / minGap) + 1;
+        const targetCount = Math.min(count, Math.max(1, maxCountBySpace));
+        const times: number[] = [];
+        let attempts = 0;
+        const maxAttempts = 2000;
+        while (times.length < targetCount && attempts < maxAttempts) {
+          attempts++;
+          let u = Math.random();
+          if (biasTowardsEnd) {
+            // currently disabled in callers, but keep shape if re-enabled later
+            u = (0.5 + 0.5 * (u * u));
+          }
+          const t = u * maxStart;
+          // Check min distance to existing picks
+          let ok = true;
+          for (let i = 0; i < times.length; i++) {
+            if (Math.abs(times[i] - t) < minGap) { ok = false; break; }
+          }
+          if (ok) {
+            times.push(t);
+          }
+        }
+        times.sort((a, b) => a - b);
+        return times;
+      };
+      if (typeof cfg.randomRedsCount === 'number' && cfg.randomRedsCount > 0) {
+        const count = Math.min(cfg.randomRedsCount, 30);
+        const spaced = generateSpacedTimes(count, false);
+        scheduledRedTimesRef.current = spaced;
+        scheduledRedTriggeredRef.current = new Array(spaced.length).fill(false);
+      } else if (typeof cfg.progressiveRedsCount === 'number' && cfg.progressiveRedsCount > 0) {
+        // bias towards the end of level (closer to timeLimit)
+        const count = Math.min(cfg.progressiveRedsCount, 30);
+        const spaced = generateSpacedTimes(count, false);
+        scheduledRedTimesRef.current = spaced;
+        scheduledRedTriggeredRef.current = new Array(spaced.length).fill(false);
+      } else {
+        scheduledRedTimesRef.current = [];
+        scheduledRedTriggeredRef.current = [];
+      }
+    };
+    scheduleForLevel(config);
     setIsPlaying(true);
   }, [getCurrentLevelConfig]);
 
@@ -50,6 +125,9 @@ export const useGameLogic = () => {
     lastRedButtonTimeRef.current = 0;
     redUntilTimeRef.current = 0;
     lastRedEvalMsRef.current = 0;
+    redSpawnsThisLevelRef.current = 0;
+    scheduledRedTimesRef.current = [];
+    scheduledRedTriggeredRef.current = [];
     setGameState(INITIAL_STATE);
   }, []);
 
@@ -93,6 +171,50 @@ export const useGameLogic = () => {
             // Niveau suivant
             const nextLevel = prev.currentLevel + 1;
             const nextConfig = LEVEL_CONFIGS[nextLevel - 1];
+              // reset red spawns count when entering a new level
+              redSpawnsThisLevelRef.current = 0;
+              // reschedule reds for next level
+              (function scheduleForLevel(cfg: LevelConfig) {
+                scheduledRedTimesRef.current = [];
+                scheduledRedTriggeredRef.current = [];
+                const timeLimit = Math.max(0, cfg.timeLimit || 0);
+                const maxStart = Math.max(0, timeLimit - 1);
+                const minGap = (cfg.level >= 7) ? 1.1 : 1.05;
+                const generateSpacedTimes = (count: number, biasTowardsEnd: boolean): number[] => {
+                  if (count <= 0 || maxStart <= 0) return [];
+                  const maxCountBySpace = Math.floor(maxStart / minGap) + 1;
+                  const finalCount = Math.min(count, Math.max(1, maxCountBySpace));
+                  const available = Math.max(0, maxStart - (finalCount - 1) * minGap);
+                  const base: number[] = [];
+                  const jitters: number[] = [];
+                  for (let i = 0; i < finalCount; i++) {
+                    const u = Math.random();
+                    const b = biasTowardsEnd ? (0.5 + 0.5 * (u * u)) : u;
+                    jitters.push(b);
+                  }
+                  jitters.sort((a, b) => a - b);
+                  for (let i = 0; i < finalCount; i++) {
+                    const jitter = available * jitters[i];
+                    const t = i * minGap + jitter;
+                    base.push(Math.min(maxStart, t));
+                  }
+                  return base;
+                };
+                if (typeof cfg.randomRedsCount === 'number' && cfg.randomRedsCount > 0) {
+                  const count = Math.min(cfg.randomRedsCount, 30);
+                  const spaced = generateSpacedTimes(count, false);
+                  scheduledRedTimesRef.current = spaced;
+                  scheduledRedTriggeredRef.current = new Array(spaced.length).fill(false);
+                } else if (typeof cfg.progressiveRedsCount === 'number' && cfg.progressiveRedsCount > 0) {
+                  const count = Math.min(cfg.progressiveRedsCount, 30);
+                  const spaced = generateSpacedTimes(count, false);
+                  scheduledRedTimesRef.current = spaced;
+                  scheduledRedTriggeredRef.current = new Array(spaced.length).fill(false);
+                } else {
+                  scheduledRedTimesRef.current = [];
+                  scheduledRedTriggeredRef.current = [];
+                }
+              })(nextConfig);
             return {
               ...prev,
               currentLevel: nextLevel,
@@ -171,32 +293,23 @@ export const useGameLogic = () => {
               }
             }
           } else {
-            const timeSinceLastRed = Math.max(0, nowSec - lastRedButtonTimeRef.current);
-
-            const trySpawnRed = (biasTowardsEnd: boolean) => {
-              if (timeSinceLastRed < (config.redButtonMinSafe || 1)) return;
-              if (nextIsRed) return;
-              const baseChance = (config.redButtonChance || 0.15);
-              let chance = baseChance;
-              if (biasTowardsEnd) {
-                const progressRatio = Math.min(prev.progress / (config.requiredProgress || 100), 1);
-                chance += progressRatio * 0.35;
+            // Scheduled reds across the whole duration
+            const scheduled = scheduledRedTimesRef.current;
+            const triggered = scheduledRedTriggeredRef.current;
+            if (Array.isArray(scheduled) && scheduled.length > 0) {
+              for (let i = 0; i < scheduled.length; i++) {
+                if (triggered[i]) continue;
+                const t = scheduled[i];
+                const inWindow = levelElapsed >= t && levelElapsed < (t + 1);
+                if (inWindow && !nextIsRed) {
+                  nextIsRed = true;
+                  triggered[i] = true;
+                  lastRedButtonTimeRef.current = nowSec;
+                  const redDuration = 1;
+                  redUntilTimeRef.current = nowSec + redDuration;
+                  redSpawnsThisLevelRef.current += 1;
+                }
               }
-              if (Math.random() < chance) {
-                nextIsRed = true;
-                lastRedButtonTimeRef.current = nowSec;
-                const redDuration = 1;
-                redUntilTimeRef.current = nowSec + redDuration;
-              }
-            };
-
-            if (typeof config.randomRedsCount === 'number') {
-              trySpawnRed(false);
-            } else if (typeof config.progressiveRedsCount === 'number') {
-              trySpawnRed(true);
-            } else {
-              // simple fallback chance
-              trySpawnRed(false);
             }
           }
         }

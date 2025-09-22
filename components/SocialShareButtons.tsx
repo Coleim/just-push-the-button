@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
 
@@ -58,28 +57,6 @@ export const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({
     }
   };
 
-  const shareGeneric = async () => {
-    const text = generateShareText();
-    try {
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync('', {
-          mimeType: 'text/plain',
-          dialogTitle: t('share_dialog_title'),
-          UTI: 'public.text',
-        });
-        await Clipboard.setStringAsync(text);
-        Alert.alert(t('copied_title'), t('copied_text_long'));
-      } else {
-        await Clipboard.setStringAsync(text);
-        Alert.alert(t('copied_title'), t('copied_text'));
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-      Alert.alert(t('error_title'), t('error_share'));
-    }
-  };
-
   const copyToClipboard = async () => {
     const text = generateShareText();
     try {
@@ -107,11 +84,6 @@ export const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({
         </TouchableOpacity>
       </View>
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={styles.shareButton} onPress={shareGeneric}>
-          <LinearGradient colors={["#4CAF50", "#43A047"]} style={styles.buttonGradient}>
-            <Text style={styles.buttonText}>📤 {t('share')}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.shareButton} onPress={copyToClipboard}>
           <LinearGradient colors={["#9E9E9E", "#757575"]} style={styles.buttonGradient}>
             <Text style={styles.buttonText}>📋 {t('copy')}</Text>
