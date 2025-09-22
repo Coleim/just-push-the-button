@@ -21,6 +21,19 @@ Plus les niveaux avancent, plus le défi augmente : barre plus longue, temps ré
 - **Clics réussis** : +1 par clic vert
 - **Bonus** : à la fin d'un niveau, + (niveau × 10)
 
+## Niveaux 
+
+- **Niveau 1**: 0 rouge (aucune fenêtre rouge)
+- **Niveau 2**: 1 rouge fixe (à 6s)
+- **Niveau 3**: 2 rouges fixes (à 4s et 8s)
+- **Niveau 4**: 3 rouges fixes (à 4s, 8s, 12s)
+- **Niveau 5**: 1 rouge aléatoire (1s)
+- **Niveau 6**: 2 rouges aléatoires (1s chacun)
+- **Niveau 7**: 3 rouges aléatoires
+- **Niveau 8**: 4 rouges aléatoires
+- **Niveau 9**: 5 rouges aléatoires
+- **Niveau 10**: 6 rouges aléatoires
+
 ## Installation et développement
 
 ### Prérequis
