@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, LevelConfig } from '../types/GameTypes';
+import { SoundManager } from '../utils/SoundManager';
 import { LEVEL_CONFIGS } from '../data/LevelData';
 
 // Set to a number (1..LEVEL_CONFIGS.length) to start directly at that level during dev/testing.
@@ -134,6 +135,16 @@ export const useGameLogic = () => {
   const handleButtonPress = useCallback(() => {
     if (!isPlaying || gameState.isGameOver || gameState.isGameWon) return;
 
+    // Trigger level-up sound immediately if this press will complete the level
+    if (!gameState.isButtonRed) {
+      const required = getCurrentLevelConfig().requiredProgress;
+      const newProgressPreview = Math.min(gameState.progress + 2, required);
+      const willComplete = newProgressPreview >= required;
+      if (willComplete && gameState.currentLevel < LEVEL_CONFIGS.length) {
+        SoundManager.playLevelUp();
+      }
+    }
+
     setGameState(prev => {
       if (prev.isButtonRed) {
         // Pénalité progressive selon le niveau
@@ -148,13 +159,16 @@ export const useGameLogic = () => {
         else if (level >= 10) penalty = 25;
 
         const reduced = Math.max(0, prev.progress - penalty);
+        // play error buzz once when pressing on red
+        SoundManager.playError();
         return { ...prev, progress: reduced };
       } else {
         // Bouton vert : progression +2%
         const newProgress = Math.min(prev.progress + 2, getCurrentLevelConfig().requiredProgress);
         const isLevelComplete = newProgress >= getCurrentLevelConfig().requiredProgress;
         
-        if (isLevelComplete) {
+        if (isLevelComplete) {          
+          SoundManager.playLevelUp();
           // Niveau terminé
           const levelBonus = prev.currentLevel * 10;
           const newScore = prev.score + 100 + prev.successfulClicks + levelBonus;

@@ -3,7 +3,7 @@ import './i18n';
 import { StatusBar } from 'expo-status-bar';
 import SystemUI from 'expo-system-ui';
 import * as NavigationBar from 'expo-navigation-bar';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -13,11 +13,15 @@ import { ProgressBar } from './components/ProgressBar';
 import { Timer } from './components/Timer';
 import { ScoreDisplay } from './components/ScoreDisplay';
 import { GameOverModal } from './components/GameOverModal';
+import { useTranslation } from 'react-i18next';
+import { SoundManager } from './utils/SoundManager';
+import { SoundProvider } from './utils/SoundProvider';
 // Confetti supprimé
 
 export default function App() {
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [showFinishOverlay, setShowFinishOverlay] = useState(false);
   const [lastLevelSeen, setLastLevelSeen] = useState<number>(1);
   // Plus de confetti
   
@@ -29,6 +33,7 @@ export default function App() {
     handleButtonPress,
     getCurrentLevelConfig,
   } = useGameLogic();
+  const { t } = useTranslation();
 
   const handleStartGame = () => {
     setShowStartScreen(false);
@@ -62,27 +67,45 @@ export default function App() {
     // NavigationBar.setButtonStyleAsync('light').catch(() => {});
   }, []);
 
-  // Ouvre le modal quand la partie est terminée ou gagnée
+  // Affiche un écran "TERMINÉ" pendant ~2.5s avant d'ouvrir le score/share
   useEffect(() => {
     if (gameState.isGameOver || gameState.isGameWon) {
-      setShowGameOverModal(true);
+      // play final sting
+      if (gameState.isGameWon) {
+        SoundManager.playWin();
+      } else if (gameState.isGameOver) {
+        SoundManager.playGameOver();
+      }
+      setShowFinishOverlay(true);
+      const timer = setTimeout(() => {
+        setShowFinishOverlay(false);
+        setShowGameOverModal(true);
+      }, 2500);
+      return () => clearTimeout(timer);
     }
   }, [gameState.isGameOver, gameState.isGameWon]);
 
-  // Mettre à jour le niveau vu pour les animations de transition (sans confetti)
   useEffect(() => {
     if (gameState.currentLevel > lastLevelSeen && !gameState.isGameOver && !gameState.isGameWon) {
       setLastLevelSeen(gameState.currentLevel);
+      SoundManager.playLevelUp();
     }
   }, [gameState.currentLevel, gameState.isGameOver, gameState.isGameWon, lastLevelSeen]);
+
+  // Preload sounds at app start
+  useEffect(() => {
+    SoundManager.preload().catch(() => {});
+  }, []);
 
   // Afficher l'écran de démarrage
   if (showStartScreen) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="auto" />
-        <StartScreen onStartGame={handleStartGame} />
-      </SafeAreaView>
+      <SoundProvider>
+        <SafeAreaView style={styles.container}>
+          <StatusBar style="auto" />
+          <StartScreen onStartGame={handleStartGame} />
+        </SafeAreaView>
+      </SoundProvider>
     );
   }
 
@@ -103,8 +126,9 @@ export default function App() {
   const currentBg = levelBgMap[gameState.currentLevel] || levelBgMap[1];
 
   return (
-    <LinearGradient colors={currentBg} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SoundProvider>
+      <LinearGradient colors={currentBg} style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
         <StatusBar style="light" />
         
         <ScoreDisplay
@@ -131,6 +155,14 @@ export default function App() {
           </View>
         </View>
         
+        {showFinishOverlay && (
+          <View style={styles.finishOverlay} pointerEvents="auto">
+            <LinearGradient colors={["#000000dd", "#000000cc"]} style={styles.finishOverlayGradient}>
+              <Text style={styles.finishText}>{t('finished')}</Text>
+            </LinearGradient>
+          </View>
+        )}
+        
         <GameOverModal
           visible={showGameOverModal}
           isGameWon={gameState.isGameWon}
@@ -140,9 +172,10 @@ export default function App() {
           onClose={handleCloseModal}
         />
 
-        {/* Plus de confetti */}
-      </SafeAreaView>
-    </LinearGradient>
+          {/* Plus de confetti */}
+        </SafeAreaView>
+      </LinearGradient>
+    </SoundProvider>
   );
 }
 
@@ -161,5 +194,32 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 40,
+  },
+  finishOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  finishOverlayGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  finishText: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   }
 });

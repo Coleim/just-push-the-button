@@ -41,6 +41,7 @@
     "rule_levels_title": "Climb all 10 levels!",
     "rule_levels_desc": "Will you become a legend... or a footnote?",
     "start_cta": "Ready to push your limits? • Adventure awaits!",
+  "finished": "FINISHED",
     "gameover": {
         "tiers": {
             "tier_0": {

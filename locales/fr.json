@@ -41,6 +41,7 @@
   "rule_levels_title": "Gravis les 10 niveaux!",
   "rule_levels_desc": "Deviendras-tu une légende… ou une note de bas de page?",
   "start_cta": "Prêt à défier tes limites? • L'aventure t'attend!",
+  "finished": "TERMINÉ",
   "gameover": {
     "tiers": {
       "tier_0": { "label": "0-49", "phrases": ["Pas mal pour une limace 🐌", "Tu cliques avec le coude ?", "Le bouton s'est endormi en t'attendant 😴"] },
