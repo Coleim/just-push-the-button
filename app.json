@@ -2,7 +2,7 @@
   "expo": {
     "name": "Just Push The Button",
     "slug": "just-push-the-button",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,7 +22,7 @@
         "backgroundColor": "#4CAF50"
       },
       "package": "com.justpushthebutton.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
